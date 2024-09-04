@@ -1,5 +1,7 @@
 import express, { request, response } from 'express'
 import 'dotenv/config'
+import logger from './logger.js'
+import morgan from 'morgan'
 const app = express()
 
 const port = process.env.PORT || 3000
@@ -7,12 +9,30 @@ const port = process.env.PORT || 3000
 // Middleware
 app.use(express.json());
 
+const morganFormat = ":method :url :status :response-time ms";
+
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write: (message) => {
+        const logObject = {
+          method: message.split(" ")[0],
+          url: message.split(" ")[1],
+          status: message.split(" ")[2],
+          responseTime: message.split(" ")[3],
+        };
+        logger.info(JSON.stringify(logObject));
+      },
+    },
+  })
+);
 
 let teaData = []
 let nextId = 1;
 
 // Add a new tea into an array
 app.post("/teas", (request, response) => {
+  console.log("POST");
     const {name, price} = request.body;
     const newData = {id: nextId++, name, price};
     teaData.push(newData);
@@ -25,6 +45,7 @@ app.post("/teas", (request, response) => {
 
 // Get all teas
 app.get("/teas", (request, response) => {
+  console.log("GET");
     response.status(200).send(teaData);
 });
 
